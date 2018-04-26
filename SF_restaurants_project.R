@@ -1,5 +1,7 @@
-## Final project
+### Final project - 545 Data Visualization
+### SF Restaurants - Health Inspections
 
+## Load libraries
 
 library(ggplot2)
 library(lubridate)
@@ -7,18 +9,18 @@ library(maps)
 library(ggmap)
 library(dplyr)
 
-data = read.csv("SFrestaurants.csv")
 
-data2 = data %>%
-  filter(business_address != "Off The Grid")
+data2 = read.csv("SFrestaurants.csv")
 
-# filter out observations that have "Off the Grid" for address; these are generally food trucks or otherwise mobile entities
+## Data cleaning
 
 data2$address2 = paste(data2$business_address, 
-                        data2$business_city, 
-                        data2$business_state, 
-                        sep = ", ")
+                       data2$business_city, 
+                       data2$business_state, 
+                       sep = ", ")
 
+
+# fill in all missing coordinates
 
 for(i in 1:nrow(data2))
 {
@@ -33,12 +35,33 @@ for(i in 1:nrow(data2))
 }
 
 
+# save as csv to be read
+
 write.csv(data2, 
-          file = "SFrestaurants2.csv",
+          file = "SFrestaurantsData.csv",
           row.names = F)
 
 
-View(data2)
+
+
+
+## now that data is clean...
+
+
+data3 = read.csv("SFrestaurantsData.csv")
+
+
+# filter out observations that have "Off the Grid" for address; these are generally food trucks or otherwise mobile entities
+# filter out obviously wrong lat/lon (some of geocode's results were in cities like New York, Denver, Chicago); these limits on lat/lon make sure the results are in the bay area
+
+
+data4 = data3 %>%
+  filter(business_address != "Off The Grid",
+         between(business_latitude, 37, 38),
+         between(business_longitude, -123, -122))
+
+View(data4)
+
 
 
 ## 4/25/18 (CJ) next steps: decide how to handle multiple observations
@@ -49,7 +72,7 @@ View(data2)
 
 
 
-# Plot map
+## Plot map
 
 SF = qmap("San Francisco",
                   zoom = 12,
@@ -60,7 +83,7 @@ SF
 
 View(head(data))
 
-SF + geom_point(data = data, 
+SF + geom_point(data = data4, 
                 aes(x= business_longitude, 
                     y = business_latitude),
                 alpha = 0.05,
@@ -70,39 +93,6 @@ SF + geom_point(data = data,
 
 #1 set colors to risk_category (dark = bad, green = good) 
 #2 set size or color or something to inspection_score; or make levels (e.g. 0-10, 10-20, ... 90-100)
-#3 look up lat/long of blank rows by address to fill in missing 20,000 values
-    # a. skip rows with "off the grid" for address, or look up by business name
-    # b. skip rows that already have lat/lon; roughly 25k remaining
-    # c. at 2,500 per person per day, should only take 2 days worth of running queries by each of us
-
-    # this accomplishes some "data cleaning"
 
 
-###### testing 
 
-dataB = data[1:20,]
-
-dataC = dataB %>%
-  filter(business_address != "Off The Grid")
-
-dataC$address2 <- paste(dataC$business_address, 
-                        dataC$business_city, 
-                        dataC$business_state, 
-                        sep = ", ")
-
-for(i in 1:nrow(data3))
-{
-  if(is.na(dataC$business_latitude[i]))
-  {
-    result <- geocode(dataC$address2[i], 
-                      output = "latlon", 
-                      source = "google")
-    dataC$business_longitude[i] <- as.numeric(result[1])
-    dataC$business_latitude[i] <- as.numeric(result[2])
-  }
-}
-
-
-write.csv(dataC, 
-          file = "dataC.csv",
-          row.names = F)
