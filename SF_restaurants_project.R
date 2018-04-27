@@ -50,6 +50,10 @@ write.csv(data2,
 
 data3 = read.csv("SFrestaurantsData.csv")
 
+## convert dates from excel format
+
+data3$inspection_date = as.Date(data3$inspection_date, origin = "1899-12-30")
+
 
 # filter out observations that have "Off the Grid" for address; these are generally food trucks or otherwise mobile entities
 # filter out obviously wrong lat/lon (some of geocode's results were in cities like New York, Denver, Chicago); these limits on lat/lon make sure the results are in the bay area
@@ -59,8 +63,6 @@ data4 = data3 %>%
   filter(business_address != "Off The Grid",
          between(business_latitude, 37, 38),
          between(business_longitude, -123, -122))
-
-View(data4)
 
 
 
@@ -81,7 +83,6 @@ SF = qmap("San Francisco",
 
 SF
 
-View(head(data))
 
 SF + geom_point(data = data4, 
                 aes(x= business_longitude, 
@@ -96,3 +97,47 @@ SF + geom_point(data = data4,
 
 
 
+data5 = data4 %>%
+  filter(data4$risk_category != "")
+
+
+risk_hist = ggplot(data5, aes(x = data5$risk_category)) +
+  geom_histogram(stat = "count") +
+  scale_x_discrete(limits = c("Low Risk", "Moderate Risk", "High Risk")) +
+  xlab("") +
+  ylab("")+
+  ggtitle("Distribution of violation risk levels")
+
+risk_hist  
+
+
+# Distribution of scores
+
+data_scores = data4 %>%
+  filter(!is.na(data4$inspection_score))
+
+data_scores2 = data_scores %>%
+  group_by(gr = cut(data_scores$inspection_score, 
+                       breaks = c(39,49,59,69,79,89,99,100)))
+
+
+data_scores3 = data_scores2 %>%
+  group_by(gr) %>%
+  summarise(n = n())
+
+score_dist = ggplot(data_scores3, 
+                    aes(x = data_scores3$gr,
+                        y = data_scores3$n
+                      
+                        
+                        )) +
+  geom_col() +
+  geom_text(aes(label = n),vjust = -0.25)+
+  scale_y_continuous(limits = c(0,15000),
+                     breaks = seq(0,15000,5000))+
+  xlab("Score (0-100)") +
+  ylab("Count")+
+  ggtitle("Distribution of inspection scores") 
+
+
+score_dist
