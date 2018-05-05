@@ -17,7 +17,7 @@ data3 = read.csv("SFrestaurantsdata.csv")
 data3 <- data3[-which(data3$risk_category == ""), ]
 
 
-myvars <- c("risk_category","inspection_date" ,"business_postal_code","inspection_type" ,"med_house_inc")
+myvars <- c("risk_category","inspection_date" ,"business_postal_code","inspection_type" ,"med_house_inc" , "inspection_score")
 
 data3 <- data3[myvars]
 
@@ -70,7 +70,7 @@ test.set=data3[-train,]
 
 rmse <- function(x, y){ sqrt(mean ((x-y)^2)) }
 
-M1 = lm(risk_category~., data = test.set)
+M1 = lm(inspection_score~., data = test.set)
 summary(M1)
 
 # training set
@@ -80,4 +80,10 @@ rmse(predict.train, train.set$risk_category)
 # testing set
 predict.test = predict(M1, data = test.set)
 rmse(predict.test, test.set$risk_category) 
+
+
+
+
+
+
 
