@@ -135,18 +135,21 @@ corrplot(corrdata, method = "color", type = "upper")
 
 # Divide into Training and Test Set
 
-train=sample(c(1:dim(data3)[1]), dim(data3)[1]*0.70)
+rmse <- function(x, y){ sqrt(mean ((x-y)^2)) }
 
-train.set=data3[train,]
-test.set=data3[-train,]
-
-
-# Regression Model
-
-M1 = lm(risk_category~., data = test.set)
+M1 = lm(inspection_score~., data = test.set)
 summary(M1)
 
-]
+plot(M1)
+
+
+# training set
+predict.train = predict(M1, data = train.set)
+rmse(predict.train, train.set$risk_category) 
+
+# testing set
+predict.test = predict(M1, data = test.set)
+rmse(predict.test, test.set$risk_category) 
 
 #-------------------------------------------------------------NIRANJAN-------------------------------------------------------#
 
@@ -428,6 +431,196 @@ ggplot(data = data4, aes (x = inspection_date, y=inspection_score)) +
 
 
 
-
-
 ##------------------------------------------------------Shiny App--------------------------------------------------------------#
+
+
+
+library(shiny)
+library(ggplot2)
+library(lubridate)
+library(maps)
+library(ggmap)
+library(dplyr)
+
+library(wordcloud)
+library(tm)
+library(SnowballC)
+library(tau)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("SF Restaurant Health Violations"),
+  
+  # Sidebar with a slider input for number of bins 
+  sidebarLayout(
+    sidebarPanel(
+      helpText("What do you want to see?"),
+      sliderInput("threshold",
+                  "Health score:",
+                  min = 50,
+                  max = 100,
+                  value = c(50,100),
+                  step = 5),
+      selectInput("riskcat",
+                  "Risk Category:",
+                  c("All","High Risk","Moderate Risk","Low Risk"),
+                  selected = "Moderate Risk"),
+      sliderInput("maxwords",
+                  "Max cloud size:",
+                  min = 0,
+                  max = 200,
+                  value = 100,
+                  step = 10)
+      
+    ),
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("mappy"),
+      plotOutput("wordcloud"),
+      plotOutput("wordchart")
+      
+    )
+  )
+)
+
+# Define server logic required to draw the map
+server <- function(input, output) {
+  
+  output$mappy <- renderPlot({
+    
+    ### START MAP!
+    
+    data3 = read.csv("SFrestaurantsData.csv")
+    
+    ## convert dates from excel format
+    
+    data3$inspection_date = as.Date(data3$inspection_date, origin = "1899-12-30")
+    
+    
+    # filter out observations that have "Off the Grid" for address; these are generally food trucks or otherwise mobile entities
+    # filter out obviously wrong lat/lon (some of geocode's results were in cities like New York, Denver, Chicago); these limits on lat/lon make sure the results are in the bay area
+    
+    
+    data4 = data3 %>%
+      filter(business_address != "Off The Grid",
+             between(business_latitude, 37, 38),
+             between(business_longitude, -123, -122))
+    
+    
+    SF = qmap("San Francisco",
+              zoom = 12,
+              maptype = "roadmap",
+              color = "bw")
+    
+    
+    data6 = data4
+    
+    
+    data6 = data6 %>%
+      filter(data6$inspection_score >= 0)
+    
+    data6$gr = cut(data6$inspection_score,
+                   breaks = c(39,49,59,69,79,89,99,100),
+                   labels = c(40,50,60,70,80,90,100))
+    
+    # filter by score range
+    
+    data_lowIS = data6 %>%
+      filter(data6$inspection_score >= input$threshold[1] & data6$inspection_score <= input$threshold[2]) 
+    
+    
+    # graph it!...
+    
+    SF + geom_point(data = data_lowIS, 
+                    aes(x = business_longitude, 
+                        y = business_latitude,
+                        fill = as.numeric(inspection_score)),
+                    alpha = 0.5,
+                    shape = 21,
+                    size = 1.5) +
+      scale_fill_gradient(low = "red", high = "green")
+    
+    # END MAP!
+    
+  })
+  
+  
+  
+  
+  
+  output$wordcloud <- renderPlot({
+    
+    violaRaw = read.csv('SFrestaurantsData.csv', stringsAsFactors = FALSE)
+    
+    ## filter by risk category
+    
+    if (input$riskcat == "All") {violaC = violaRaw} else
+    {violaC = violaRaw %>%
+      filter(violaRaw$risk_category == input$riskcat)}
+    
+    ## filter by score range
+    
+    violaC = violaC %>%
+      filter(violaC$inspection_score >= input$threshold[1] & violaC$inspection_score <= input$threshold[2]) 
+    
+    violationCorpus = VCorpus(VectorSource(violaC$violation_description))
+    violationCorpus = tm_map(violationCorpus, content_transformer(tolower))
+    violationCorpus = tm_map(violationCorpus, removePunctuation)
+    violationCorpus = tm_map(violationCorpus, PlainTextDocument)
+    violationCorpus = tm_map(violationCorpus, removeWords, stopwords('english'))
+    violationCorpus = tm_map(violationCorpus, removeWords, c("food","moderate", "high", "risk","inadequate","improper","contact","holding", "safety"))
+    
+    
+    pal2= brewer.pal(8,"Dark2")
+    wordcloud(violationCorpus, max.words = input$maxwords, random.order = FALSE, rot.per = .15, colors = pal2)
+    
+    
+    
+    
+  })
+  
+  output$wordchart <- renderPlot({
+    
+    violaRaw = read.csv('SFrestaurantsData.csv', stringsAsFactors = FALSE)
+    
+    ## filter by risk category
+    
+    if (input$riskcat == "All") {violaC = violaRaw} else
+    {violaC = violaRaw %>%
+      filter(violaRaw$risk_category == input$riskcat)}
+    
+    ## filter by score range
+    
+    violaC = violaC %>%
+      filter(violaC$inspection_score >= input$threshold[1] & violaC$inspection_score <= input$threshold[2]) 
+    
+    
+    violationCorpus = VCorpus(VectorSource(violaC$violation_description))
+    violationCorpus = tm_map(violationCorpus, content_transformer(tolower))
+    violationCorpus = tm_map(violationCorpus, removePunctuation)
+    violationCorpus = tm_map(violationCorpus, PlainTextDocument)
+    violationCorpus = tm_map(violationCorpus, removeWords, stopwords('english'))
+    violationCorpus = tm_map(violationCorpus, removeWords, c("food","moderate", "high", "risk","inadequate","improper","contact","holding", "safety"))
+    
+    ### Frequent words
+    
+    dtm = TermDocumentMatrix(violationCorpus)
+    m = as.matrix(dtm)
+    v = sort(rowSums(m), decreasing = TRUE)
+    d = data.frame(word = names(v), freq = v)
+    
+    barplot(d[1:10,]$freq, las = 2, names.arg = d[1:10,]$word,
+            col ="lightblue", main ="Most frequent words",
+            ylab = "Word frequencies")
+    
+  })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
+
+
