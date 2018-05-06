@@ -70,7 +70,7 @@ test.set=data3[-train,]
 
 rmse <- function(x, y){ sqrt(mean ((x-y)^2)) }
 
-M1 = lm(inspection_score~., data = test.set)
+M1 = lm(risk_category~., data = test.set)
 summary(M1)
 
 # training set
@@ -80,6 +80,14 @@ rmse(predict.train, train.set$risk_category)
 # testing set
 predict.test = predict(M1, data = test.set)
 rmse(predict.test, test.set$risk_category) 
+
+
+
+
+
+
+
+
 
 
 

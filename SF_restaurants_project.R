@@ -115,7 +115,6 @@ SF + geom_point(data = data6,
 
 # map of low scores
 
-View(data6)
 
 data_lowIS = data6 %>%
   filter(data6$inspection_score < 60)
@@ -165,7 +164,7 @@ SF + geom_point(data = data_vermin,
 data5 = data4 %>%
   filter(data4$risk_category != "")
 
-View(data5)
+
 
 risk_hist = ggplot(data5, aes(x = data5$risk_category)) +
   geom_histogram(stat = "count") +
@@ -208,7 +207,7 @@ score_dist = ggplot(data_scores3,
 
 score_dist
 
-View(data3)
+
 
 
 
