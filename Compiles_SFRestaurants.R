@@ -80,6 +80,7 @@ data4 = data3 %>%
 
 # We start the analysis by running a correlation plot and regression to understand basic relationships in data .
 
+data3 = read.csv("SFrestaurantsData.csv")
 
 # Eliminate Blank Risk Categories
 
@@ -135,6 +136,15 @@ corrplot(corrdata, method = "color", type = "upper")
 
 # Divide into Training and Test Set
 
+
+
+train=sample(c(1:dim(data3)[1]), dim(data3)[1]*0.70)
+
+train.set=data3[train,]
+test.set=data3[-train,]
+
+
+
 rmse <- function(x, y){ sqrt(mean ((x-y)^2)) }
 
 M1 = lm(inspection_score~., data = test.set)
@@ -168,7 +178,14 @@ SF = qmap("San Francisco",
           maptype = "roadmap",
           color = "bw")
 
-SF
+SF2 = qmap("San Francisco",
+           zoom = 13,
+           maptype = "roadmap",
+           color = "bw")
+
+
+
+SF2 
 
 
 data6 = data4
@@ -181,7 +198,6 @@ data6$gr = cut(data6$inspection_score,
                breaks = c(39,49,59,69,79,89,99,100),
                labels = c(40,50,60,70,80,90,100))
 
-View(data6)
 
 
 ## Overlay the Inspection Data on top of the SF map to see how the scores are spread out by dividing them into different ranges
@@ -234,14 +250,53 @@ data_vermin = data6 %>%
   filter(data6$violation_description == "High risk vermin infestation")
 
 
-SF + geom_point(data = data_vermin, 
+SF2 + geom_point(data = data_vermin, 
+                 aes(x= business_longitude, 
+                     y = business_latitude
+                 ),
+                 alpha = 0.2,
+                 shape = 21,
+                 size = 2,
+                 fill = "darkred", color = "darkred"
+) +
+  ggtitle("High Risk Vermin Infestations") +
+  theme(legend.position = "none")
+
+
+## heat map of inspection scores
+
+SF + geom_point(data = data6, 
                 aes(x= business_longitude, 
                     y = business_latitude,
-                    fill = "darkred"),
-                alpha = 0.4,
+                    fill = data6$inspection_score,
+                    color = data6$inspection_score),
+                
+                alpha = 100/((data6$inspection_score)^2),
+                
                 shape = 21,
-                size = 2
+                size = (100/data6$inspection_score)^3
+) +
+  scale_fill_gradient2(midpoint= 50,mid = "darkred", high = NA, name = "Score")+
+  scale_color_gradient(low = NA, high = NA, guide = FALSE)
+
+
+
+SF + geom_point(data = data6, 
+                aes(x= business_longitude, 
+                    y = business_latitude),
+                alpha = 1,
+                
+                shape = 19,
+                size = 1
 )
+
+
+
+
+
+
+
+
 
 
 
