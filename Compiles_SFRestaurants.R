@@ -34,17 +34,17 @@ data2$address2 = paste(data2$business_address,
 
 # Since a lot of the coordinated a are missing we run a gecode script to fill in all missing coordinates
 
-for(i in 1:nrow(data2))
-{
-  if(is.na(data2$business_latitude[i]))
-  {
-    result <- geocode(data2$address2[i], 
-                      output = "latlon", 
-                      source = "google")
-    data2$business_longitude[i] <- as.numeric(result[1])
-    data2$business_latitude[i] <- as.numeric(result[2])
-  }
-}
+# for(i in 1:nrow(data2))
+# {
+#   if(is.na(data2$business_latitude[i]))
+#   {
+#     result <- geocode(data2$address2[i], 
+#                       output = "latlon", 
+#                       source = "google")
+#     data2$business_longitude[i] <- as.numeric(result[1])
+#     data2$business_latitude[i] <- as.numeric(result[2])
+#   }
+# }
 
 
 # save as csv to be read
