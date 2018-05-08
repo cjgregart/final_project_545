@@ -13,13 +13,13 @@ Please find the project repository for the below members :
 The repository includes the following files :
 
 1. The Final Report (DSO 545 - Final Project Report - SF Restaurants.pdf)
-2. Compiled and Documented R Code ( Final_Project_545.R)*
+2. Compiled and Documented R Code ( Final_Project_545.R)**
 3. Raw Data SF Restaurants (SFrestaurants.csv)
 4. Raw Data Median Income (SFMedianIncomeData.csv)
-5. Modified Merged SF Restaurant Data with Median Incomes (SFrestaurantsData.csv)**
+5. Modified Merged SF Restaurant Data with Median Incomes (SFrestaurantsData.csv)***
 6. The project file(final_project_545.Rproj)
 
 
-* Includes Shiny App at the end. Please select and run the app separately.
-** Our Final Data set used for all subsequent Analysis
+** Includes Shiny App at the end. Please select and run the app separately.
+*** Our Final Data set used for all subsequent Analysis
 
