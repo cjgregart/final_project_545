@@ -19,7 +19,6 @@ library(tau)
 
 
 
-
 #  Data Cleansing and structuring 
 
 
@@ -33,18 +32,19 @@ data2$address2 = paste(data2$business_address,
                        sep = ", ")
 
 # Since a lot of the coordinated a are missing we run a gecode script to fill in all missing coordinates
+## Donot Re-Run the Below For Loop
 
-# for(i in 1:nrow(data2))
-# {
-#   if(is.na(data2$business_latitude[i]))
-#   {
-#     result <- geocode(data2$address2[i], 
-#                       output = "latlon", 
-#                       source = "google")
-#     data2$business_longitude[i] <- as.numeric(result[1])
-#     data2$business_latitude[i] <- as.numeric(result[2])
-#   }
-# }
+for(i in 1:nrow(data2))
+{
+  if(is.na(data2$business_latitude[i]))
+  {
+    result <- geocode(data2$address2[i],
+                      output = "latlon",
+                      source = "google")
+    data2$business_longitude[i] <- as.numeric(result[1])
+    data2$business_latitude[i] <- as.numeric(result[2])
+  }
+}
 
 
 # save as csv to be read
@@ -73,14 +73,13 @@ data4 = data3 %>%
          between(business_longitude, -123, -122))
 
 
-#-------------------------------------------------------------NIRANJAN------------------------------------------------------------#
 
 ## Linear Regression
 
 
 # We start the analysis by running a correlation plot and regression to understand basic relationships in data .
 
-data3 = read.csv("SFrestaurantsData.csv")
+data3 = data4
 
 # Eliminate Blank Risk Categories
 
@@ -131,6 +130,8 @@ data3$business_postal_code = change.to.levels(data3$business_postal_code, busine
 
 ## Correlation Plot 
 
+
+
 corrdata = cor(data3)
 corrplot(corrdata, method = "color", type = "upper")
 
@@ -153,6 +154,7 @@ summary(M1)
 plot(M1)
 
 
+
 # training set
 predict.train = predict(M1, data = train.set)
 rmse(predict.train, train.set$risk_category) 
@@ -161,9 +163,7 @@ rmse(predict.train, train.set$risk_category)
 predict.test = predict(M1, data = test.set)
 rmse(predict.test, test.set$risk_category) 
 
-#-------------------------------------------------------------NIRANJAN-------------------------------------------------------#
 
-#-------------------------------------------------------------CJ-------------------------------------------------------------#
 
 ## Exploratory Daata Analysis 
 
@@ -294,20 +294,13 @@ SF + geom_point(data = data6,
 
 
 
-
-
-
-
-
-
-
 #Distribution of violations in each risk category
 
 data5 = data4 %>%
   filter(data4$risk_category != "")
 
 risk_hist = ggplot(data5, aes(x = data5$risk_category)) +
-  geom_histogram(stat = "count", fill ="lightblue", color ="red") +
+  geom_histogram(stat = "count" , fill = "#BA032E") +
   scale_x_discrete(limits = c("Low Risk", "Moderate Risk", "High Risk")) +
   xlab("") +
   ylab("")+
@@ -336,7 +329,7 @@ score_dist = ggplot(data_scores3,
                         
                         
                     )) +
-  geom_col(fill ="lightblue", color ="red") +
+  geom_col(fill = "#BA032E") +
   geom_text(aes(label = n),vjust = -0.25)+
   scale_y_continuous(limits = c(0,15000),
                      breaks = seq(0,15000,5000))+
@@ -356,7 +349,7 @@ score_dist
 
 ##Understand Impact of Median Income on Different scores 
 
-data7 = read.csv("SFrestaurantsData.csv")
+
 
 data7 = data6 %>%
   group_by(business_postal_code) %>%
@@ -366,7 +359,7 @@ data7 = data6 %>%
 
 
 ggplot(data7, aes(x= house_inc, y = mean_inspection)) +
-  geom_point(color = "darkblue") +
+  geom_point(color = "red") +
   scale_y_continuous(name = "Mean Inspection Scores", 
                      limits = c(60, 100),
                      breaks = c(60, 70, 80, 90, 100),
@@ -410,11 +403,6 @@ ggplot(top10trends, aes(x = Inspection_Year,
 
 
 
-#-------------------------------------------------------------AY-------------------------------------------------------------#
-
-#-------------------------------------------------------------Miles-----------------------------------------------------------#
-
-
 
 # To find the key words used in vilations in form of a wordcloud
 
@@ -441,52 +429,64 @@ d = data.frame(word = names(v), freq = v)
 head(d, 20)
 
 
-#-------------------------------------------------------------Miles-----------------------------------------------------------#
-
-#-------------------------------------------------------------Tom Wu-----------------------------------------------------------#
-
 ## understand the impact of icnome levels on inspection Scores
 
 
-data7 = read.csv("SFrestaurantsData.csv")
+data4 = read.csv("SFrestaurantsData.csv")
 
-median(data7$inspection_score, na.rm = T)
+## Income analysis section
 
-data7$med_house_inc = as.numeric(data7$med_house_inc)
+dataincome = data4
 
-data7$income_level = cut(data7$med_house_inc, 
-                         breaks = c(50000,70000, 100000, 140000,200000),
-                         labels = c("low","medium","high", "very high"))
+dataincome$med_house_inc = as.numeric(data4$med_house_inc)
 
-data7 = data7 %>%
-  filter(data7$income_level != "NA")
+dataincome$income_level = cut(dataincome$med_house_inc, 
+                              breaks = c(50000,70000, 90000, 120000,200000),
+                              labels = c("low","medium","high", "very high"))
 
-# Faceted density graph
+dataincome = dataincome %>%
+  filter(dataincome$income_level != "NA")
 
-ggplot(data = data7, aes (x=inspection_score, fill=income_level)) +
+# Inspection Score Distribution by Income Level Faceted density graph.
+
+ggplot(data = dataincome, aes (x=inspection_score, fill=income_level)) +
   geom_density(alpha = 0.3) +
-  facet_wrap (~ income_level)
+  facet_wrap (~ income_level) +
+  labs(x = "Inspection Scores", y = "# of Inspections", fill = "Income Levels") +
+  ggtitle ("Inspection Score Distribution by Income Level")
+
+# Inspection Score Distribution by Income Level Boxplot.
+
+ggplot(data = dataincome, aes (x=income_level, y=inspection_score)) +
+  geom_boxplot() +
+  labs(x = "Income Levels", y = "Inspection Score") +
+  ggtitle ("Inspection Score Distribution by Income Level")
+
+# Income Level Count by Inspection Score. 
+ggplot(data = dataincome, aes (x=inspection_score, fill=income_level)) +
+  geom_bar() +
+  labs(x = "Inspection Scores", y = "# of Inspections", fill = "Income Levels") +
+  ggtitle ("Income Level Count by Inspection Score")
 
 
-ggplot(data = data7, aes (x=income_level, y=inspection_score)) +
-  geom_boxplot()
+#  Stacked bar chart indicating income level share of inspection scores. 
 
-# (below) Stacked bar. Pretty (kind of), but useless.
-ggplot(data = data7, aes (x=inspection_score, fill=income_level)) +
-  geom_bar()
-
-# (below) scatterplot (faceted by risk). Pretty useless...
-ggplot(data = data4, aes (x = inspection_date, y=inspection_score)) +
-  geom_point() +
-  facet_wrap(~ risk_category)
+dataincomeperc <- dataincome %>%
+  group_by(inspection_score, income_level) %>%
+  summarise (count=n()) %>%
+  mutate (perc = count/sum(count))
 
 
-
-#-------------------------------------------------------------Tom Wu-----------------------------------------------------------#
+ggplot(dataincomeperc, aes(x = factor(inspection_score), y = perc*100, fill = factor(income_level))) +
+  geom_bar(stat="identity", width = 0.7) +
+  labs(x = "Inspection Scores", y = "% of Inspections", fill = "Income Levels") +
+  scale_x_discrete(breaks = c(50, 60, 70, 80, 90)) +
+  ggtitle ("Income Level Share by Inspection Score")
 
 
 
-##------------------------------------------------------Shiny App--------------------------------------------------------------#
+##------------------------------------------------------Shiny App - Please Select and Run Seperately --------------------------------------------------------------#
+
 
 
 
@@ -506,7 +506,7 @@ library(tau)
 ui <- fluidPage(
   
   # Application title
-  titlePanel("SF Restaurant Health Violations"),
+  titlePanel("SF Restaurant Health Violations Map and Wordcloud"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
@@ -550,9 +550,6 @@ server <- function(input, output) {
     
     data3 = read.csv("SFrestaurantsData.csv")
     
-    ## convert dates from excel format
-    
-    data3$inspection_date = as.Date(data3$inspection_date, origin = "1899-12-30")
     
     
     # filter out observations that have "Off the Grid" for address; these are generally food trucks or otherwise mobile entities
@@ -577,11 +574,10 @@ server <- function(input, output) {
     data6 = data6 %>%
       filter(data6$inspection_score >= 0)
     
-    data6$gr = cut(data6$inspection_score,
-                   breaks = c(39,49,59,69,79,89,99,100),
-                   labels = c(40,50,60,70,80,90,100))
     
     # filter by score range
+    
+    data6$inspection_score = as.numeric(data6$inspection_score)
     
     data_lowIS = data6 %>%
       filter(data6$inspection_score >= input$threshold[1] & data6$inspection_score <= input$threshold[2]) 
@@ -596,7 +592,8 @@ server <- function(input, output) {
                     alpha = 0.5,
                     shape = 21,
                     size = 1.5) +
-      scale_fill_gradient(low = "red", high = "green")
+      scale_fill_gradient(low = "red", high = "green") +
+      labs(fill = "Health Scores")
     
     # END MAP!
     
